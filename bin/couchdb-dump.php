@@ -37,7 +37,7 @@ if (isset($params['h'])) {
 
 $host = isset($params['H']) ? trim($params['H']) : 'localhost';
 $port = isset($params['p']) ? intval($params['p']) : 5984;
-$database = isset($params['d']) ? strval($params['d']) : "testna";
+$database = isset($params['d']) ? strval($params['d']) : null;
 $noHistory = isset($params['X']) ? $params['X'] : false;
 $callbackFile = isset($params['y']) ? $params['y'] : "output.json";
 $inlineAttachment = isset($params['a']) ? $params['a'] : false; 
@@ -46,10 +46,10 @@ $callbackFilter = null;
   
 if (null !== $callbackFile) {
     $callbackFilter = include $callbackFile;
-   /* if (!is_callable($callbackFilter)) {
+    if (!is_callable($callbackFilter)) {
         fwrite(STDERR, "ERROR: PHP script with filter callback/function must return valid callable." . PHP_EOL);
         exit(1);
-    }*/
+    }
 }
 
 if ('' === $host || $port < 1 || 65535 < $port) {
