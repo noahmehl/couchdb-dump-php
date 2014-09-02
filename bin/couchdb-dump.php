@@ -3,6 +3,7 @@
 
 fwrite(STDERR, "COUCH DB DUMPER | version: 1.2.0" . PHP_EOL);
 fwrite(STDERR, "(c) Copyright 2013, Anton Bondar <anton@zebooka.com> http://zebooka.com/soft/LICENSE/" . PHP_EOL . PHP_EOL);
+fwrite(STDERR, "(c) Copyright 2014, Updated by Miralem Mehic <miralem@mehic.info>" . PHP_EOL . PHP_EOL);
 
 $help = <<<HELP
    This tool dumps available documents it can find using _all_docs request to CouchDB.
@@ -14,8 +15,11 @@ OPTIONS:
    -H <HOSTNAME>      Hostname or IP of CouchDB server (default: 'localhost').
    -p <PORT>          Port of CouchDB server (default: 5984).
    -d <DATABASE>      Database to dump.
+   -a                 Fetch attachments inline (capture them in base64 encoded format).
    -X                 No revisions history in dump.
+   -A                 Fetch attachments binary (Download them to current folder).
    -y <PHP_FILE>      Include this PHP script that returns callback/function to check if document/revision needs to be dumped.
+
 
 USAGE:
    {$_SERVER['argv'][0]} -H localhost -p 5984 -d test > dump.json
@@ -33,16 +37,19 @@ if (isset($params['h'])) {
 
 $host = isset($params['H']) ? trim($params['H']) : 'localhost';
 $port = isset($params['p']) ? intval($params['p']) : 5984;
-$database = isset($params['d']) ? strval($params['d']) : null;
+$database = isset($params['d']) ? strval($params['d']) : "testna";
 $noHistory = isset($params['X']) ? $params['X'] : false;
-$callbackFile = isset($params['y']) ? $params['y'] : null;
+$callbackFile = isset($params['y']) ? $params['y'] : "output.json";
+$inlineAttachment = isset($params['a']) ? $params['a'] : false; 
+$binaryAttachments = isset($params['A']) ? $params['A'] : false;
 $callbackFilter = null;
+  
 if (null !== $callbackFile) {
     $callbackFilter = include $callbackFile;
-    if (!is_callable($callbackFilter)) {
+   /* if (!is_callable($callbackFilter)) {
         fwrite(STDERR, "ERROR: PHP script with filter callback/function must return valid callable." . PHP_EOL);
         exit(1);
-    }
+    }*/
 }
 
 if ('' === $host || $port < 1 || 65535 < $port) {
@@ -83,20 +90,36 @@ if (!$noHistory) {
 $first = true;
 $count = count($all_docs['rows']);
 fwrite(STDERR, "Found {$count} documents..." . PHP_EOL);
+  
 foreach ($all_docs['rows'] as $doc) {
+  
     // foreach DOC get all revs
     if (!$noHistory) {
         $url = "http://{$host}:{$port}/{$database}/" . urlencode($doc['id']) . "?revs=true&revs_info=true";
-    } else {
-        $url = "http://{$host}:{$port}/{$database}/" . urlencode($doc['id']);
+    } else {  
+        $url = "http://{$host}:{$port}/{$database}/" . urlencode($doc['id']) . (($inlineAttachment || $binaryAttachments) ? "?attachments=true" : "");
     }
+ 
+
     fwrite(STDERR, "[{$doc['id']}]");
+ 
     $curl = getCommonCurl($url);
-    $result = curl_exec($curl);
+     
+    curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+        'Content-type: application/json',
+        'Accept: *\/*'
+    ));
+      
+   $result = $wholeDocument = curl_exec($curl); 
+
+  
     $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     curl_close($curl);
+
     if (200 == $statusCode) {
-        $doc_revs = json_decode($result, true);
+       $doc_revs = json_decode($result, true);
+
+
     } else {
         // unknown status
         fwrite(STDERR, "ERROR: Unsupported response when fetching document [{$doc['id']}] from db '{$database}' (http status code = {$statusCode}) " . PHP_EOL);
@@ -110,6 +133,7 @@ foreach ($all_docs['rows'] as $doc) {
         $lastRev = $lastRev['rev'];
         reset($revs_info);
         foreach ($revs_info as $rev) {
+
             // foreach rev fetch DB/ID?rev=REV&revs=true
             fwrite(STDERR, "[{$doc['id']}] @ {$rev['rev']}");
             if ('available' === $rev['status']) {
@@ -141,6 +165,7 @@ foreach ($all_docs['rows'] as $doc) {
                 fwrite(STDERR, " = unsupported revision status" . PHP_EOL);
                 continue; // who knows :)
             }
+
             // add document to dump
             if (!$first) {
                 fwrite(STDOUT, ', ' . PHP_EOL . $full_doc);
@@ -149,7 +174,10 @@ foreach ($all_docs['rows'] as $doc) {
             }
             $first = false;
         }
+  
+  
     } else {
+       
         // we have only one revision
         unset($doc_revs['_revs_info']);
         $lastRev = $doc_revs['_rev'];
@@ -162,7 +190,12 @@ foreach ($all_docs['rows'] as $doc) {
         if ($noHistory) {
             unset($doc_revs['_rev']);
         }
+
+        if(!$inlineAttachment && !$binaryAttachments)
+            unset($doc_revs["_attachments"]);
+
         $full_doc = json_encode($doc_revs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+ 
         if ($full_doc !== null && $full_doc !== false) {
             if (!$first) {
                 fwrite(STDOUT, ', ' . PHP_EOL . $full_doc);
@@ -170,8 +203,33 @@ foreach ($all_docs['rows'] as $doc) {
                 fwrite(STDOUT, $full_doc);
             }
             $first = false;
-        }
+        } 
+ 
+
+        /* 
+        *   Binary attachments 
+        */
+        if($binaryAttachments && $doc_revs["_attachments"]){
+
+            foreach($doc_revs["_attachments"] as $attachment_id => $content){ 
+
+                $tempUrl = "http://{$host}:{$port}/{$database}/" . urlencode($doc['id']) . "/" . $attachment_id; 
+
+                //create folder
+                if (!file_exists('./' . $doc['id'])) 
+                    mkdir('./' . $doc['id'], 0777, true);
+            
+                $ch = getCommonCurl( $tempUrl );
+                $fp = fopen( './' . $doc['id'] . '/' . $attachment_id, 'wb'); //download attachment to current folder
+                curl_setopt($ch, CURLOPT_FILE, $fp);
+                curl_setopt($ch, CURLOPT_HEADER, 0);
+                curl_exec($ch);
+                curl_close($ch);
+                fclose($fp); 
+            }
+        } 
     }
+  
 }
 // end of dump
 fwrite(STDOUT, PHP_EOL . ']}' . PHP_EOL);

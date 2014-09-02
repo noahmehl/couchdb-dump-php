@@ -3,6 +3,7 @@
 
 fwrite(STDERR, "COUCH DB RESTORER | version: 1.0.0" . PHP_EOL);
 fwrite(STDERR, "(c) Copyright 2013, Anton Bondar <anton@zebooka.com> http://zebooka.com/soft/LICENSE/" . PHP_EOL . PHP_EOL);
+fwrite(STDERR, "(c) Copyright 2014, Updated by Miralem Mehic <miralem@mehic.info>" . PHP_EOL . PHP_EOL);
 
 $help = <<<HELP
    This tool restores provided JSON dump using _bulk_docs feature in CouchDB.
@@ -16,6 +17,7 @@ OPTIONS:
    -f <FILENAME>      JSON file to restore.
    -D                 Drop and create database, if needed (default: create db, only if it does not exist).
    -F                 Force restore on existing db with documents.
+   -a                 Restore inline attachments (from base64 encoded format).
 
 WARNING:
    Please note, that it is not a good idea to restore dump on existing database with documents.
@@ -36,6 +38,7 @@ $host = isset($params['H']) ? trim($params['H']) : 'localhost';
 $port = isset($params['p']) ? intval($params['p']) : 5984;
 $database = isset($params['d']) ? strval($params['d']) : null;
 $filename = isset($params['f']) ? strval($params['f']) : null;
+$inlineAttachment = isset($params['a']) ? $params['a'] : false; 
 $drop = isset($params['D']) ? strval($params['D']) : false;
 $forceRestore = isset($params['F']) ? $params['F'] : false;
 
@@ -121,7 +124,25 @@ fwrite(STDERR, "Restoring '{$filename}' into db '{$database}' at {$host}:{$port}
 $curl = getCommonCurl($url);
 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
 curl_setopt($curl, CURLOPT_POST, true);
-curl_setopt($curl, CURLOPT_POSTFIELDS, file_get_contents($filename));
+
+$fileContent = file_get_contents($filename);
+
+//If we don't wont to upload attachments then we need to remove content from the file used for upload
+if(!$inlineAttachment){
+    $decodedContent = json_decode($fileContent);
+    foreach($decodedContent as $content){
+        foreach($content as $k=>$v){ 
+            if(isset($v->_attachments) && $v->_attachments){
+                unset($v->_attachments); 
+                unset($v->unnamed);
+            }
+        }
+    }
+    $fileContent = json_encode($decodedContent);
+}
+
+
+curl_setopt($curl, CURLOPT_POSTFIELDS, $fileContent);
 // TODO: use next string when get ideas why it is not working and how to fix it.
 //curl_setopt($curl, CURLOPT_INFILE, $filehandle); // strange, but this does not work
 $result = trim(curl_exec($curl));
