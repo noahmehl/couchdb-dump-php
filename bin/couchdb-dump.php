@@ -37,12 +37,13 @@ if (isset($params['h'])) {
 
 $host = isset($params['H']) ? trim($params['H']) : 'localhost';
 $port = isset($params['p']) ? intval($params['p']) : 5984;
-$database = isset($params['d']) ? strval($params['d']) : null;
+$database = isset($params['d']) ? strval($params['d']) : "testna";
 $noHistory = isset($params['X']) ? $params['X'] : false;
 $callbackFile = isset($params['y']) ? $params['y'] : null;
 $inlineAttachment = isset($params['a']) ? $params['a'] : false; 
-$binaryAttachments = isset($params['A']) ? $params['A'] : false;
+$binaryAttachments = (isset($params['A']) && $noHistory) ? $params['A'] : false;
 $callbackFilter = null;
+ 
   
 if (null !== $callbackFile) {
     $callbackFilter = include $callbackFile;
@@ -59,6 +60,11 @@ if ('' === $host || $port < 1 || 65535 < $port) {
 
 if (!isset($database) || '' === $database) {
     fwrite(STDERR, "ERROR: Please specify database name (-d <DATABASE>)." . PHP_EOL);
+    exit(1);
+}
+
+if (isset($params['A']) && !$noHistory) {
+    fwrite(STDERR, "ERROR: In order to fetch attachments binary, you must use -X option." . PHP_EOL);
     exit(1);
 }
 
@@ -191,9 +197,17 @@ foreach ($all_docs['rows'] as $doc) {
             unset($doc_revs['_rev']);
         }
 
-        if(!$inlineAttachment && !$binaryAttachments)
+        if((!$inlineAttachment && !$binaryAttachments))
             unset($doc_revs["_attachments"]);
 
+        if($binaryAttachments && !$inlineAttachment && isset($doc_revs["_attachments"]) && $doc_revs["_attachments"]){ 
+            foreach($doc_revs["_attachments"] as $key=>$value){
+                $doc_revs["_attachments"][$key]["length"] = strlen($value["data"]);
+                $doc_revs["_attachments"][$key]["stub"] = true;
+                unset($doc_revs["_attachments"][$key]["data"]);
+            } 
+        }
+    
         $full_doc = json_encode($doc_revs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
  
         if ($full_doc !== null && $full_doc !== false) {
@@ -203,9 +217,8 @@ foreach ($all_docs['rows'] as $doc) {
                 fwrite(STDOUT, $full_doc);
             }
             $first = false;
-        } 
- 
-
+        }  
+   
         /* 
         *   Binary attachments 
         */
