@@ -101,7 +101,7 @@ foreach ($all_docs['rows'] as $doc) {
   
     // foreach DOC get all revs
     if (!$noHistory) {
-        $url = "http://{$host}:{$port}/{$database}/" . urlencode($doc['id']) . "?revs=true&revs_info=true";
+        $url = "http://{$host}:{$port}/{$database}/" . urlencode($doc['id']) . "?revs=true&revs_info=true" . (($inlineAttachment) ? "&attachments=true" : "");
     } else {  
         $url = "http://{$host}:{$port}/{$database}/" . urlencode($doc['id']) . (($inlineAttachment || $binaryAttachments) ? "?attachments=true" : "");
     }
