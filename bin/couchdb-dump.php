@@ -37,7 +37,7 @@ if (isset($params['h'])) {
 
 $host = isset($params['H']) ? trim($params['H']) : 'localhost';
 $port = isset($params['p']) ? intval($params['p']) : 5984;
-$database = isset($params['d']) ? strval($params['d']) : "testna";
+$database = isset($params['d']) ? strval($params['d']) : null;
 $noHistory = isset($params['X']) ? $params['X'] : false;
 $callbackFile = isset($params['y']) ? $params['y'] : null;
 $inlineAttachment = isset($params['a']) ? $params['a'] : false; 
