@@ -144,7 +144,7 @@ foreach($decodedContent->docs as $documentTemp){
     
     $url = "http://{$host}:{$port}/{$database}/" . $documentTemp["_id"];
 
-    fwrite(STDOUT,  "Restoring '{$documentTemp['_id']}' into db '{$database}' at {$host}:{$port}.." . PHP_EOL);
+    fwrite(STDOUT,  "Restoring '{$documentTemp['_id']}|rev:{$documentTemp['_rev']}' into db '{$database}' at {$host}:{$port}.." . PHP_EOL);
 
     //If we don't wont to upload attachments then we need to remove content from the file used for upload
     if(!$inlineAttachment && isset($documentTemp["_attachments"]) && $documentTemp["_attachments"]){
