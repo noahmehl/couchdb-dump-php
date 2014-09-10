@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-
+ini_set('memory_limit', '-1');
 fwrite(STDERR, "COUCH DB DUMPER | version: 1.2.0" . PHP_EOL);
 fwrite(STDERR, "(c) Copyright 2013, Anton Bondar <anton@zebooka.com> http://zebooka.com/soft/LICENSE/" . PHP_EOL . PHP_EOL);
 fwrite(STDERR, "(c) Copyright 2014, Updated by Miralem Mehic <miralem@mehic.info>" . PHP_EOL . PHP_EOL);
