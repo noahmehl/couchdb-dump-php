@@ -1,22 +1,50 @@
-CouchDB Dump/Restore Tools
-==========================
+###PHP-based CouchDB Dump/Restore Utility
 
-PHP scripts to dump and restore CouchDB databases.
+This tool was originally authored by [Anton Bondar](https://github.com/zebooka). Additional work to support inline base64 attachements was sponsored by [CloudPBX Inc.](http://cloudpbx.ca) and authored by [Miralem Mehic](https://github.com/mickeyze).
 
+The original dump tool authored by zebooka included supported incremental backups. This made it much more feasible to add support to dump inline base64 attachements. 
 
-Reason, why I written them
---------------------------
+Although CouchDB's  `/_all_docs` function is more popular with DB backups that don't include attachements, this function doesn't support attachements. To download attachments, individual documents must be accessed.
 
-Because I found no usable and available tools to dump Couch databases, including history revisions, if needed.
+Rerence on CouchDB's  `/_all_docs` function [here ](http://docs.couchdb.org/en/latest/api/database/bulk-api.html) 
 
+###USAGE for BACKUP with `couchdb-dump.php`
+#####Basic Example: 
 
-Why on PHP?
------------
+`couchdb-dump.php -H localhost -p 5984 -d test > dump.json`
 
-Why not? This is just scripting language. I know it. If you would like, you can write your one scripts, for example on Python, with all bells and whistles, with blackjack and hookers.
+#####Attachment Example: 
 
+`couchdb-dump.php -X -a -H localhost -p 5984 -d test > dump.json`
 
-Usage
------
+OPTIONS:
 
-Just run each script with -h flag and read help.
+* `-h`                 Display this help message.
+* `-e`                 Turn php error reporting ON.
+* `-H <HOSTNAME>`      Hostname or IP of CouchDB server (default: 'localhost').
+* `-p <PORT>`          Port of CouchDB server (default: 5984).
+* `-d <DATABASE>`      Database to dump.
+* `-a`                 Fetch attachments inline (capture them in base64 encoded format).
+* `-X`                 No revisions history in dump.
+* `-A`                Fetch attachments binary (Download them to current folder).
+* `-y <PHP_FILE>`      Include this PHP script that returns callback/function to check if document/revision needs to be dumped.
+
+###Usage for RESTORE with `couchdb-restore.php`
+
+Basic Example: 
+
+`couchdb-restore.php -H localhost -p 5984 -d test -f dump.json`
+
+OPTIONS:
+
+* `-h` Display this help message.
+* `-e`                 Turn php error reporting ON.
+* `-H <HOSTNAME>`      Hostname or IP of CouchDB server (default: 'localhost').
+* `-p <PORT>`          Port of CouchDB server (default: 5984).
+* `-d <DATABASE>`      Database to restore.
+* `-f <FILENAME>`      JSON file to restore.
+* `-D`                 Drop and create database, if needed 
+(default: create db, only if it does not exist).
+* `-F`                 Force restore on existing DB with documents.
+* `-a`                 Restore inline attachments (from base64 encoded format).
+
