@@ -4,7 +4,7 @@ This tool was originally authored by [Anton Bondar](https://github.com/zebooka).
 
 The original dump tool authored by zebooka included supported incremental backups. This made it much more feasible to add support to dump inline base64 attachements. 
 
-Although CouchDB's  `/_all_docs` function is more popular with DB backups that don't include attachements, this function doesn't support attachements. To download attachments, individual documents must be accessed.
+Although CouchDB's  `/_all_docs` function is more popular with DB backups that don't include attachements, this function doesn't support attachments. To download attachments, individual documents must be accessed.
 
 Rerence on CouchDB's  `/_all_docs` function [here ](http://docs.couchdb.org/en/latest/api/database/bulk-api.html) 
 
