@@ -8,7 +8,8 @@ Although CouchDB's  `/_all_docs` function is more popular with DB backups that d
 
 Rerence on CouchDB's  `/_all_docs` function [here ](http://docs.couchdb.org/en/latest/api/database/bulk-api.html) 
 
-###USAGE for BACKUP with `couchdb-dump.php`
+###Usage for BACKUP with `couchdb-dump.php`
+
 #####Basic Example: 
 
 `couchdb-dump.php -H localhost -p 5984 -d test > dump.json`
@@ -31,7 +32,7 @@ OPTIONS:
 
 ###Usage for RESTORE with `couchdb-restore.php`
 
-Basic Example: 
+#####Basic Example: 
 
 `couchdb-restore.php -H localhost -p 5984 -d test -f dump.json`
 
