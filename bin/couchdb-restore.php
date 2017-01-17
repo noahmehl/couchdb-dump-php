@@ -128,7 +128,7 @@ foreach($decodedContent->docs as $documentTemp){
     $documentTemp = (array)$documentTemp;  
 
     //so we need to fetch the latest revision of the document, because in order to upload a new version of document we MUST know latest rev ID
-    $url = "http://{$host}:{$port}/{$database}/" . $documentTemp["_id"]; 
+    $url = "http://{$host}:{$port}/{$database}/" . urlencode($documentTemp["_id"]); 
     $curl = getCommonCurl($url);
     $result = trim(curl_exec($curl));
     $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -142,7 +142,7 @@ foreach($decodedContent->docs as $documentTemp){
     if(isset($documentTemp["_revisions"]))
         unset($documentTemp["_revisions"]);
     
-    $url = "http://{$host}:{$port}/{$database}/" . $documentTemp["_id"];
+    $url = "http://{$host}:{$port}/{$database}/" . urlencode($documentTemp["_id"]);
 
     fwrite(STDOUT,  "Restoring '{$documentTemp['_id']}|rev:{$documentTemp['_rev']}' into db '{$database}' at {$host}:{$port}.." . PHP_EOL);
 
