@@ -75,11 +75,19 @@ if (isset($params['A']) && !$noHistory) {
 $url = "http://{$host}:{$port}/{$database}/_all_docs";
 fwrite(STDERR, "Fetching all documents info from db '{$database}' at {$host}:{$port} ..." . PHP_EOL);
 //utilize CurlWrap with retry...
+fwrite(STDERR, "The URL of curl query is: " . $url . PHP_EOL);
 $curl=new CurlWrap();
 $curl->exec($url);
 $result = trim($curl->getExecResponse());
 $statusCode = $curl->getHttpCode();
+$error_reason = $curl->getError();
 fwrite(STDERR, "Status code of curl query is: " . $statusCode . PHP_EOL);
+if ($error_reason == '') {
+    fwrite(STDERR, "Curl completed without error." . $error_reason . PHP_EOL);
+} else {
+    fwrite(STDERR, "Error response of curl query is: " . $error_reason . PHP_EOL);
+}
+
 if (200 == $statusCode) {
     $all_docs = json_decode($result, true);
 } else {
@@ -112,20 +120,28 @@ foreach ($all_docs['rows'] as $doc) {
     }
  
 
-    fwrite(STDERR, "[{$doc['id']}]");
- 
-    $curl = getCommonCurl($url);
-     
-    curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+    fwrite(STDERR, "[{$doc['id']}]" . PHP_EOL);
+
+    $curl=new CurlWrap();
+    fwrite(STDERR, "The URL of curl query is: " . $url . PHP_EOL);
+    $curl->setOption(CURLOPT_HTTPHEADER, array(
         'Content-type: application/json',
         'Accept: *\/*'
     ));
-      
-   $result = $wholeDocument = curl_exec($curl); 
 
+    $curl->exec($url);
+
+    $result = $wholeDocument = $curl->getExecResponse(); 
   
-    $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-    curl_close($curl);
+    $statusCode = $curl->getHttpCode();
+    $error_reason = $curl->getError();
+    fwrite(STDERR, "Status code of curl query is: " . $statusCode . PHP_EOL);
+    
+    if ($error_reason == '') {
+        fwrite(STDERR, "Curl completed without error." . $error_reason . PHP_EOL);
+    } else {
+        fwrite(STDERR, "Error response of curl query is: " . $error_reason . PHP_EOL);
+    }
 
     if (200 == $statusCode) {
        $doc_revs = json_decode($result, true);
