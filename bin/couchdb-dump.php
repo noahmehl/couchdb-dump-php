@@ -165,10 +165,28 @@ foreach ($all_docs['rows'] as $doc) {
             fwrite(STDERR, "[{$doc['id']}] @ {$rev['rev']}");
             if ('available' === $rev['status']) {
                 $url = "http://{$host}:{$port}/{$database}/" . urlencode($doc['id']) . "?revs=true&rev=" . urlencode($rev['rev']);
-                $curl = getCommonCurl($url);
-                $result = curl_exec($curl);
-                $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-                curl_close($curl);
+                
+                $curl=new CurlWrap();
+                fwrite(STDERR, "The URL of curl query is: " . $url . PHP_EOL);
+                $curl->setOption(CURLOPT_HTTPHEADER, array(
+                    'Content-type: application/json',
+                    'Accept: *\/*'
+                ));
+
+                $curl->exec($url);
+
+                $result = $wholeDocument = $curl->getExecResponse(); 
+              
+                $statusCode = $curl->getHttpCode();
+                $error_reason = $curl->getError();
+                fwrite(STDERR, "Status code of curl query is: " . $statusCode . PHP_EOL);
+                
+                if ($error_reason == '') {
+                    fwrite(STDERR, "Curl completed without error." . $error_reason . PHP_EOL);
+                } else {
+                    fwrite(STDERR, "Error response of curl query is: " . $error_reason . PHP_EOL);
+                }
+
                 if (200 == $statusCode) {
                     $full_doc = trim($result);
                 } else {
@@ -252,13 +270,20 @@ foreach ($all_docs['rows'] as $doc) {
                 //create folder
                 if (!file_exists('./' . $doc['id'])) 
                     mkdir('./' . $doc['id'], 0777, true);
-            
-                $ch = getCommonCurl( $tempUrl );
+                $ch = new CurlWrap();
+                fwrite(STDERR, "The URL of curl query is: " . $url . PHP_EOL);
                 $fp = fopen( './' . $doc['id'] . '/' . $attachment_id, 'wb'); //download attachment to current folder
-                curl_setopt($ch, CURLOPT_FILE, $fp);
-                curl_setopt($ch, CURLOPT_HEADER, 0);
-                curl_exec($ch);
-                curl_close($ch);
+                $ch->setOption(CURLOPT_FILE, $fp);
+                $ch->setOption(CURLOPT_HEADER, 0);
+                $ch->exec($url);
+                $statusCode = $ch->getHttpCode();
+                $error_reason = $ch->getError();
+                fwrite(STDERR, "Status code of curl query is: " . $statusCode . PHP_EOL);
+                if ($error_reason == '') {
+                    fwrite(STDERR, "Curl completed without error." . $error_reason . PHP_EOL);
+                } else {
+                    fwrite(STDERR, "Error response of curl query is: " . $error_reason . PHP_EOL);
+                }
                 fclose($fp); 
             }
         } 
