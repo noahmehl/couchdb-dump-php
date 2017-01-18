@@ -1,5 +1,8 @@
 #!/usr/bin/env php
 <?php
+
+include_once 'CurlWrap.php';
+
 ini_set('memory_limit', '-1');
 fwrite(STDERR, "COUCH DB DUMPER | version: 1.2.0" . PHP_EOL);
 fwrite(STDERR, "(c) Copyright 2013, Anton Bondar <anton@zebooka.com> http://zebooka.com/soft/LICENSE/" . PHP_EOL . PHP_EOL);
@@ -71,10 +74,12 @@ if (isset($params['A']) && !$noHistory) {
 // get all docs IDs
 $url = "http://{$host}:{$port}/{$database}/_all_docs";
 fwrite(STDERR, "Fetching all documents info from db '{$database}' at {$host}:{$port} ..." . PHP_EOL);
-$curl = getCommonCurl($url);
-$result = trim(curl_exec($curl));
-$statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-curl_close($curl);
+//utilize CurlWrap with retry...
+$curl=new CurlWrap();
+$curl->exec($url);
+$result = trim($curl->getExecResponse());
+$statusCode = $curl->getHttpCode();
+fwrite(STDERR, "Status code of curl query is: " . $statusCode . PHP_EOL);
 if (200 == $statusCode) {
     $all_docs = json_decode($result, true);
 } else {
